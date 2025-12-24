@@ -11,6 +11,7 @@ Whenever someone logs into or out of your server via SSH, you’ll get a push-st
 ## 📦 What this script does
 
 - Creates a secure helper script in `/etc/pam.scripts` that sends ntfy alerts on SSH login and logout using `pam_exec`.
+- Just includes username, as use of IP addresses on the free [ntfy](https://ntfy.sh) is publically accessible.
 - Backs up your `/etc/pam.d/sshd` file before changing anything
 - Adds a `session optional pam_exec.so` line to `sshd`’s PAM config so the helper script runs automatically.
 - Prompts you for your **ntfy topic URL**, encouraging a long, random topic for privacy.
@@ -29,12 +30,7 @@ Whenever someone logs into or out of your server via SSH, you’ll get a push-st
 
 1. **Save the script**
 
-Save the installer as `ssh_ntfy_pam_install.sh`:
-
-```bash
-nano ssh_ntfy_pam_install.sh
-# Paste the full script here, then save and exit
-```
+Save the installer as `ssh_ntfy_pam_install.sh`
 
 2. **Make it executable**
 
@@ -53,7 +49,7 @@ sudo ./ssh_ntfy_pam_install.sh
 When prompted:
     - Paste a full URL like:
 `https://ntfy.sh/this-is-a-very-long-random-topic-name-1234567890`
-    - Longer and more random topics are harder to guess and are recommended.
+    - Longer and more random topics are harder to guess and are recommended if using the free https://ntfy.sh
 
 The script will:
 
@@ -71,7 +67,7 @@ The script will:
 ssh youruser@your-server
 ```
 
-2. Check your ntfy topic (web UI, app, or `curl`) and confirm:
+2. Check your ntfy topic (web UI or app) and confirm:
     - A **login** message when the session opens.
     - A **logout** message after you exit the SSH session.
 3. If you see no messages:
