@@ -1,3 +1,6 @@
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/a7e94c02-bf96-4ccd-9185-293fe5a32c5c" />
+
+
 # SSH-ntfy
 Automated script to install a SSH login/logout alert using PAM + ntfy 
 This script sets up automatic **SSH login and logout alerts** using [ntfy](https://ntfy.sh).
