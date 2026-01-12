@@ -55,14 +55,14 @@ case "\${PAM_TYPE}" in
     curl \\
       -H "prio: high" \\
       -H "tags: warning" \\
-      -d "SSH login: \${PAM_USER} \\
+      -d "SSH login: \${PAM_USER}" \\
       "${NTFY_TOPIC_URL}"
     ;;
   close_session)
     curl \\
       -H "prio: low" \\
-      -H "tags: info" \\
-      -d "SSH logout: \${PAM_USER} \\
+      -H "tags: information_source" \\
+      -d "SSH logout: \${PAM_USER}" \\
       "${NTFY_TOPIC_URL}"
     ;;
 esac
