@@ -1,97 +1,109 @@
-<img width="200" alt="image" src="https://github.com/user-attachments/assets/a7e94c02-bf96-4ccd-9185-293fe5a32c5c" />
+<img width="100" alt="image" src="https://github.com/user-attachments/assets/a7e94c02-bf96-4ccd-9185-293fe5a32c5c" />
 
+# **SSH-ntfy**
 
-# SSH-ntfy
-Automated script to install a SSH login/logout alert using PAM + ntfy 
-This script sets up automatic **SSH login and logout alerts** using [ntfy](https://ntfy.sh).
-Whenever someone logs into or out of your server via SSH, you’ll get a push-style notification in your chosen ntfy topic.
+Automated scripts to implement either **SSH login/logout alerts** or a full **2FA SSH Gatekeeper** using PAM and [ntfy](https://ntfy.sh).  
+Depending on your security needs, you can choose between simple notifications or an interactive approval system that blocks access until you tap a button on your phone.
 
-***
+# ---
 
-## 📦 What this script does
+# **🚀 Choose Your Level of Security**
 
-- Creates a secure helper script in `/etc/pam.scripts` that sends ntfy alerts on SSH login and logout using `pam_exec`.
-- Just includes username, as use of IP addresses on the free [ntfy](https://ntfy.sh) is publically accessible.
-- Backs up your `/etc/pam.d/sshd` file before changing anything
-- Adds a `session optional pam_exec.so` line to `sshd`’s PAM config so the helper script runs automatically.
-- Prompts you for your **ntfy topic URL**, encouraging a long, random topic for privacy.
+| Feature | Alerts Only (ssh\_ntfy\_pam\_install.sh) | The Gatekeeper (install\_ntfy\_gatekeeper.sh) |
+| :---- | :---- | :---- |
+| **Function** | Sends a notification when someone logs in/out. | **Blocks** login until you tap "Approve" on your phone. |
+| **Interaction** | Passive (informative). | Active (2FA/MFA). |
+| **Impact** | Minimal. Connection is instant. | User hangs at "Connecting..." until approved. |
+| **Whitelist** | N/A. | Remembers approved IPs for 24 hours. |
 
-***
+# ---
 
-## 🧩 Requirements
+# **📦 What these scripts do**
 
-- Linux system using PAM with `/etc/pam.d/sshd` (most modern distros).
-- `curl` installed (used to send requests to ntfy).
-- Root access (the script edits PAM config and writes to `/etc`).
+## **Option A: Alerts Only**
 
-***
+* Creates a helper script in /etc/pam.scripts that sends ntfy alerts on SSH session open and close.  
+* Backs up your /etc/pam.d/sshd file.  
+* Adds an optional PAM line so logins proceed even if the notification fails.
 
-## ▶️ Installation
+## **Option B: The Gatekeeper (2FA)**
 
-1. **Save the script**
+* Implements a **blocking** 2FA challenge at the start of the SSH handshake.  
+* Uses auth requisite to ensure the login **fails immediately** if "Deny" is pressed or the 45-second timer expires.  
+* Generates unique session IDs to prevent replay attacks and filtered polling to avoid false positives.  
+* Creates a local trust directory (/var/lib/ssh-ntfy) to whitelist your IP for 24 hours after one successful approval.
 
-Save the installer as `ssh_ntfy_pam_install.sh`
+# ---
 
-2. **Make it executable**
+# **🧩 Requirements**
 
-```bash
-chmod +x ssh_ntfy_pam_install.sh
-```
+* **System:** Linux using PAM with /etc/pam.d/sshd (Arch, Debian, Ubuntu, etc.).  
+* **Tools:** curl and bash installed.  
+* **Access:** Root privileges.  
+* **App:** The [ntfy mobile app](https://www.google.com/search?q=https://ntfy.sh/%23download) installed on your phone.  
+* **Config:** Ensure UsePAM yes and KbdInteractiveAuthentication yes are set in /etc/ssh/sshd\_config.
 
-3. **Run as root**
+# ---
 
-```bash
-sudo ./ssh_ntfy_pam_install.sh
-```
+# **▶️ Installation**
 
-4. **Enter your ntfy topic URL**
+## **1\. Save your chosen script**
 
-When prompted:
-    - Paste a full URL like:
-`https://ntfy.sh/this-is-a-very-long-random-topic-name-1234567890`
-    - Longer and more random topics are harder to guess and are recommended if using the free https://ntfy.sh
+Save either ssh\_ntfy\_pam\_install.sh (Alerts) or install\_ntfy\_gatekeeper.sh (Gatekeeper) to your server.
 
-The script will:
+## **2\. Make it executable**
 
-- Create `/etc/pam.scripts/ssh_ntfy_alert.sh`.
-- Back up `/etc/pam.d/sshd` to a timestamped `.bak.*` file.
-- Append a `pam_exec` line to call the helper script for SSH sessions.
+Bash
 
-***
+chmod \+x your\_chosen\_script.sh
 
-## 🧪 How to test
+## **3\. Run as root**
 
-1. From another machine, SSH into the server:
+Bash
 
-```bash
-ssh youruser@your-server
-```
+sudo ./your\_chosen\_script.sh
 
-2. Check your ntfy topic (web UI or app) and confirm:
-    - A **login** message when the session opens.
-    - A **logout** message after you exit the SSH session.
-3. If you see no messages:
-    - Check `/var/log/auth.log` or `/var/log/secure` for `pam_exec` or script errors.
-    - Make sure `/etc/pam.scripts/ssh_ntfy_alert.sh` is executable and owned by root.
+## **4\. Configuration Prompts**
 
-***
+* **Alerts Script:** Enter your full ntfy topic URL (e.g., https://ntfy.sh/my\_secret\_alerts).  
+* **Gatekeeper Script:** Enter just the **Topic Name** (e.g., my\_secret\_gatekeeper). The script will handle the rest.
 
-## 🛠️ Uninstall / revert
+# ---
 
-If you want to undo changes:
+# **🧪 How to test**
 
-1. Restore the backup PAM file:
+## **For Option A (Alerts):**
 
-```bash
-sudo cp /etc/pam.d/sshd.bak.YYYYMMDDHHMMSS /etc/pam.d/sshd
-```
+1. SSH into your server: ssh user@server-ip.  
+2. Confirm you receive a "SSH login" notification on your phone immediately.
 
-2. Optionally remove the helper script and directory:
+## **For Option B (Gatekeeper):**
 
-```bash
-sudo rm -f /etc/pam.scripts/ssh_ntfy_alert.sh
-sudo rmdir /etc/pam.scripts 2>/dev/null || true
-```
+1. **Clear old whitelists:** sudo rm \-f /var/lib/ssh-ntfy/\*.  
+2. **Attempt login:** The terminal should "hang" and not ask for a password yet.  
+3. **Check Phone:** You will receive a notification with **Approve** and **Deny** buttons.  
+4. **Action:** \- Tap **Approve**: The terminal will proceed to the password prompt.  
+   * Tap **Deny**: The terminal will immediately close the connection.
 
+# ---
 
-This returns your SSH PAM configuration to its state before the script ran.
+# **🛠️ Maintenance & Debugging**
+
+## **Debugging**
+
+If things aren't working as expected, check the logs:
+
+* **Gatekeeper Logs:** cat /tmp/ntfy\_debug.log  
+* **System Logs:** journalctl \-u ssh or tail \-f /var/log/auth.log
+
+## **Uninstall / Revert**
+
+1. **Restore PAM:** Look for the .bak file created in /etc/pam.d/ and move it back:  
+   Bash  
+   sudo cp /etc/pam.d/sshd.bak.YYYYMMDDHHMMSS /etc/pam.d/sshd
+
+2. **Remove Scripts:**  
+   Bash  
+   sudo rm \-rf /etc/pam.scripts  
+   sudo rm \-rf /var/lib/ssh-ntfy  
+
